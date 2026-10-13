@@ -126,6 +126,8 @@ details.ref dd{margin:0}
 .alert .gl button{min-height:44px;padding:0 16px;border-radius:999px;border:1.5px solid var(--warn);background:transparent;font-weight:600;color:var(--ink)}
 .actions{display:flex;flex-wrap:wrap;gap:12px}
 .okmsg{color:var(--ok);font-weight:600}
+.banner{border-radius:14px;padding:14px 16px;font-weight:600;margin-top:12px;border:1.5px solid var(--ok);background:var(--cold-bg);color:var(--ink)}
+.banner.warn{border-color:var(--warn);background:var(--warn-bg)}
 .steps{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:8px}
 table.codes{border-collapse:collapse;width:100%;font-size:16px}
 table.codes th,table.codes td{text-align:left;padding:8px 10px;border-top:1px solid var(--line);vertical-align:top}
@@ -165,6 +167,9 @@ table.codes code{font-family:ui-monospace,Menlo,Consolas,monospace;background:va
 
 /* ===== Form hookup. Leave formUrl empty until the form is connected (see the Form setup page). ===== */
 var BAKED={formUrl:"",map:{}};
+
+/* ===== Google Sheet hookup. Paste the Apps Script Web app URL (ends in /exec) between the quotes. ===== */
+var SHEET_URL="https://script.google.com/macros/s/AKfycbyn5HGKzQEIg65QS51nAPeXIUcW1IJh0ZlNlr6cy2G0l5tAnAbKPV9UOtKyRFOrE6Gj/exec";
 
 var TOKENS=['rep','date','customer','ctype','region','cheese','meat','culatello','cvolume','frequency','supplier','frustration','other'];
 var QLABEL={
@@ -245,7 +250,7 @@ var S=fresh();
     f.step=Math.min(4,Math.max(0,d.step|0)); S=f;
   }catch(e){}
 })();
-var UI={view:'survey',confirmReset:false,refOpen:false,setupUrl:'',setupParsed:null,setupMsg:''};
+var UI={banner:null,sending:false,sendErr:'',sheetDraft:'',sheetMsg:'',view:'survey',confirmReset:false,refOpen:false,setupUrl:'',setupParsed:null,setupMsg:''};
 if(location.hash==='#setup')UI.view='setup';
 
 var saveT=null;
@@ -310,6 +315,63 @@ function parseLink(s){
   if(!Object.keys(map).length)return {error:'No question codes found in that link. Type each code (rep, date, customer and so on) as the answer to its question, then copy the pre-filled link again.'};
   return {formUrl:u.origin+u.pathname+'?'+keep.toString().replace(/\+/g,'%20'),map:map,missing:TOKENS.filter(function(t){return !map[t]})};
 }
+
+/* ===== Google Sheet sending (with an outbox for weak signal) ===== */
+var OUT_KEY='ccrs-outbox-v1';
+function sheetUrl(){return SHEET_URL||ls.get('ccrs-sheet')||''}
+function uid(){return Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8)}
+function payload(){
+  var a=answers(),prods=[];
+  ['cheese','meat'].forEach(function(sec){LISTS[sec].forEach(function(p){
+    var r=S.rows[sec][p.id],any=r.pack!==''||r.vol!==''||r.age;
+    prods.push({category:sec==='cheese'?'Cheese':'Cured meat',product:p.name,buys:r.none?'No':(any?'Yes':(r.notes.trim()?'Notes only':'Not answered')),
+      pack:r.none?'':r.pack,volume:r.none?'':r.vol,age:r.none?'':r.age,notes:r.notes.trim()});
+  })});
+  a.id=uid();a.products=prods;
+  return a;
+}
+function outbox(){try{var o=JSON.parse(ls.get(OUT_KEY)||'[]');return Array.isArray(o)?o:[]}catch(e){return []}}
+function setOutbox(o){if(o.length)ls.set(OUT_KEY,JSON.stringify(o));else ls.del(OUT_KEY)}
+function postOne(url,item){
+  var body=JSON.stringify(item);
+  return fetch(url,{method:'POST',body:body}).then(function(r){
+    return r.text().then(function(txt){
+      var j;try{j=JSON.parse(txt)}catch(e){throw new Error('The sheet link did not reply properly. Check the Apps Script is deployed as a Web app with access set to Anyone.')}
+      if(!j.ok)throw new Error('The sheet replied: '+(j.error||'not accepted'));
+      return j;
+    });
+  },function(){
+    // Network or browser blocked reading the reply: send once more without reading it.
+    // The sheet ignores repeats of the same survey, so this is safe.
+    return fetch(url,{method:'POST',mode:'no-cors',body:body}).then(function(){return {ok:true,blind:true}});
+  });
+}
+var flushing=null;
+function flushOutbox(){
+  if(flushing)return flushing;
+  var url=sheetUrl();
+  if(!url||!outbox().length)return Promise.resolve(true);
+  UI.sendErr='';
+  var chain=Promise.resolve();
+  outbox().forEach(function(item){chain=chain.then(function(){return postOne(url,item).then(function(){setOutbox(outbox().filter(function(x){return x.id!==item.id}))})})});
+  flushing=chain.then(function(){return true},function(e){
+    UI.sendErr=(navigator.onLine===false||e instanceof TypeError)?'No signal right now. Saved on this tablet and it will send automatically.':String(e&&e.message||e);
+    return false;
+  }).then(function(ok){flushing=null;softRender();return ok});
+  return flushing;
+}
+function softRender(){
+  var f=$('#obx'); if(f)f.innerHTML=outboxNote();
+  if(UI.view==='survey'&&S.step===4)render();
+}
+function outboxNote(){
+  var n=outbox().length;
+  if(!n||!sheetUrl())return 'Answers are kept on this tablet until you start the next customer.';
+  return '<b style="color:var(--warn)">'+n+' survey'+(n>1?'s':'')+' waiting to send.</b> <button type="button" data-act="flush">Send now</button>';
+}
+window.addEventListener('online',function(){flushOutbox()});
+document.addEventListener('visibilitychange',function(){if(!document.hidden)flushOutbox()});
+setInterval(function(){if(outbox().length)flushOutbox()},60000);
 
 /* ===== toast + clipboard ===== */
 var toastT=null;
@@ -379,14 +441,18 @@ function stepReview(){
   html+='<ul class="sum">'+li('Rep',a.rep)+li('Date',a.date)+li('Customer',a.customer)+li('Type',a.ctype)+li('Region',a.region)+li('Cheeses',a.cheese)+li('Meats & salumi',a.meat)+
     li('Would stock culatello',a.culatello)+li('Culatello kg / month',a.cvolume)+li('Order frequency',a.frequency)+li('Main supplier(s)',a.supplier)+li('Biggest frustration',a.frustration)+li('Anything else',a.other)+'</ul>';
   html+='<div class="actions">';
-  if(url){
+  var su=sheetUrl();
+  if(su){
+    html+='<button type="button" class="btn pri"'+(m.length||UI.sending?' disabled':'')+' data-act="send">'+(UI.sending?'Sending…':'Submit')+'</button>';
+  }else if(url){
     html+='<a class="btn pri'+(m.length?' off':'')+'" href="'+esc(url)+'" target="_blank" rel="noopener">Open form to send</a>';
   }else{
     html+='<span class="btn pri off">Form not connected yet</span>';
   }
   html+='<button type="button" class="btn" data-act="copy">Copy answers</button>';
   html+='<button type="button" class="btn" data-act="reset">'+(UI.confirmReset?'Tap again to clear this survey':'Start next customer')+'</button></div>';
-  html+='<p class="lead" style="margin:0">'+(url?'The form opens with every answer filled in. Tap Submit on the form page, then come back here and start the next customer.':'Until the form is connected, use Copy answers and send them on.')+'</p>';
+  if(UI.sendErr&&outbox().length)html+='<div class="alert"><b>Not sent yet.</b><span>'+esc(UI.sendErr)+'</span></div>';
+  html+='<p class="lead" style="margin:0">'+(su?'Submit sends every answer straight to the Google Sheet and clears the survey for the next customer. No signal? It is saved on this tablet and sends by itself later.':url?'The form opens with every answer filled in. Tap Submit on the form page, then come back here and start the next customer.':'Until the form is connected, use Copy answers and send them on.')+'</p>';
   html+='</section>';
   return html;
 }
@@ -405,13 +471,20 @@ function surveyHTML(){
   var bar='<div class="bar"><button type="button" class="btn" data-act="back"'+(S.step===0?' disabled':'')+'>Back</button><span class="mid">Step '+(S.step+1)+' of 5</span>'+
     (S.step<4?'<button type="button" class="btn pri" data-act="next">Next: '+STEPS[S.step+1]+'</button>':'<span style="min-width:96px"></span>')+'</div>';
   return '<header class="top"><h1>Cold Chain Rep Survey</h1><p>Italian cheeses & cured meats · customer visit</p></header>'+
-    '<nav class="pills" aria-label="Survey steps">'+pills+'</nav><main>'+body+'</main>'+bar+
-    '<footer class="foot"><span>Answers are kept on this tablet until you start the next customer.</span><button type="button" data-act="setup">Form setup</button></footer>';
+    '<nav class="pills" aria-label="Survey steps">'+pills+'</nav><main>'+(UI.banner?'<div class="banner'+(UI.banner.warn?' warn':'')+'" role="status">'+esc(UI.banner.text)+'</div>':'')+body+'</main>'+bar+
+    '<footer class="foot"><span id="obx">'+outboxNote()+'</span><button type="button" data-act="setup">Form setup</button></footer>';
 }
 function setupHTML(){
   var c=cfg(),p=UI.setupParsed;
   var status=BAKED.formUrl?'Connected to the form built into this page.':(c?'Test connection saved on this device only.':'Not connected.');
-  var h='<header class="top"><h1>Form setup</h1><p>Connect the survey to a Google Form or Microsoft Form.</p></header>';
+  var h='<header class="top"><h1>Form setup</h1><p>Send answers straight to a Google Sheet (or connect a Google / Microsoft Form).</p></header>';
+  var su=sheetUrl();
+  h+='<section class="card"><h2>Google Sheet</h2><p class="lead">Paste the Apps Script Web app link (ends in /exec).</p>'+
+    '<p class="stat">'+(SHEET_URL?'Connected to the sheet built into this page.':(su?'Connected on this device only.':'Not connected.'))+'</p>'+
+    (SHEET_URL?'':'<div class="fld"><label for="s-sheet">Web app link</label><input id="s-sheet" class="in mono" style="min-height:56px" type="url" autocomplete="off" value="'+esc(UI.sheetDraft||ls.get('ccrs-sheet')||'')+'" placeholder="https://script.google.com/macros/s/.../exec"></div>'+
+    '<div class="actions"><button type="button" class="btn" data-act="sheetTest">Test link</button><button type="button" class="btn pri" data-act="sheetSave">Use on this device</button>'+(su?'<button type="button" class="btn" data-act="sheetClear">Remove</button>':'')+'</div>')+
+    (UI.sheetMsg?'<p class="stat">'+esc(UI.sheetMsg)+'</p>':'')+'</section>';
+  h+='<section class="card" style="gap:6px"><h2 style="font-size:20px">Alternative: Google Form or Microsoft Form</h2><p class="lead" style="margin:0">Only needed if you are not using the Google Sheet above.</p></section>';
   h+='<section class="card"><h2>1. Build the form</h2><p class="lead">Create a form with these 13 questions. Make every one a Short answer or Paragraph question (no dropdowns, no date picker), so the survey can fill them in.</p>'+
     '<div class="tbl"><table class="codes"><thead><tr><th>Code</th><th>Question</th><th>Type</th></tr></thead><tbody>'+
     TOKENS.map(function(t){return '<tr><td><code>'+t+'</code></td><td>'+esc(QLABEL[t][0])+'</td><td>'+QLABEL[t][1]+'</td></tr>'}).join('')+'</tbody></table></div></section>';
@@ -440,7 +513,7 @@ function render(){
   window.scrollTo(0,y);
 }
 function commit(){saveDraft();render()}
-function setStep(i){S.step=i;UI.confirmReset=false;saveDraft();render();window.scrollTo(0,0)}
+function setStep(i){S.step=i;UI.confirmReset=false;UI.banner=null;saveDraft();render();window.scrollTo(0,0)}
 
 /* ===== bindings ===== */
 function setPath(path,v){var p=path.split('.');S[p[0]][p[1]]=v}
@@ -467,6 +540,25 @@ document.addEventListener('click',function(e){
   if(a==='none'){var r=S.rows[b.dataset.sec][b.dataset.id];r.none=!r.none;if(r.none){r.pack='';r.vol='';r.age=''}return commit()}
   if(a==='pick')return openPick(b.dataset.kind,b.dataset.sec,b.dataset.id);
   if(a==='copy')return copyText(plainText());
+  if(a==='send'){
+    if(missing().length||UI.sending||!sheetUrl())return;
+    var item=payload(),box=outbox();box.push(item);setOutbox(box);
+    UI.sending=true;render();
+    return flushOutbox().then(function(){
+      var sent=!outbox().some(function(x){return x.id===item.id});
+      UI.sending=false;
+      S=fresh();ls.del('ccrs-draft-v1');UI.confirmReset=false;
+      UI.banner=sent?{text:'Sent to the sheet: '+item.customer+'. Ready for the next customer.'}:{warn:true,text:'Saved on this tablet: '+item.customer+'. '+(UI.sendErr||'It will send automatically.')};
+      render();window.scrollTo(0,0);toast(sent?'Sent':'Saved, will send later');
+    });
+  }
+  if(a==='flush'){return flushOutbox().then(function(ok){toast(ok?'All sent':'Still waiting for signal')})}
+  if(a==='sheetTest'){var st=$('#s-sheet');UI.sheetDraft=st?st.value.trim():UI.sheetDraft;
+    if(!/^https:\/\/script\.google\.com\/macros\/s\/[^/]+\/exec$/.test(UI.sheetDraft)){UI.sheetMsg='That does not look like a Web app link. It should start with https://script.google.com/macros/s/ and end with /exec';return render()}
+    UI.sheetMsg='Checking…';render();
+    fetch(UI.sheetDraft).then(function(r){return r.json()}).then(function(j){UI.sheetMsg=j&&j.ok?'Link works. Tap "Use on this device" to start sending.':'Link replied, but not as expected.'},function(){UI.sheetMsg='Could not reach that link. Check it is deployed with access set to Anyone.'}).then(render);return}
+  if(a==='sheetSave'){var sv=$('#s-sheet');UI.sheetDraft=sv?sv.value.trim():UI.sheetDraft;if(!UI.sheetDraft)return;ls.set('ccrs-sheet',UI.sheetDraft);UI.sheetMsg='Saved. Submit on the Review step now sends to your sheet.';render();return flushOutbox()}
+  if(a==='sheetClear'){ls.del('ccrs-sheet');UI.sheetMsg='Removed from this device.';return render()}
   if(a==='reset'){
     if(!UI.confirmReset){UI.confirmReset=true;render();setTimeout(function(){if(UI.confirmReset){UI.confirmReset=false;render()}},4000);return}
     S=fresh();UI.confirmReset=false;ls.del('ccrs-draft-v1');render();window.scrollTo(0,0);return toast('Ready for the next customer');
@@ -518,6 +610,7 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!root.hidde
 window.addEventListener('hashchange',function(){if(location.hash==='#setup'&&UI.view!=='setup'){UI.view='setup';render()}});
 
 render();
+flushOutbox();
 })();
 </script>
 
