@@ -1,0 +1,524 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Cold Chain Rep Survey</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one step at a time, sticky step bar on top, sticky Back/Next bar below. Big touch targets for tablets used standing up at a customer. */
+/* Palette taken from the Clear World Sales Pacing dashboard: dark teal header, teal accent, pale grey-blue page, white cards. */
+:root{
+  --bg:#F1F5F6; --surface:#FFFFFF; --surface2:#F4F7F8; --line:#DCE4E6;
+  --ink:#0F2124; --muted:#5B6E73; --accent:#2A857A; --accent-fg:#1F6F66; --on-accent:#FFFFFF;
+  --cold:#2B8F84; --cold-bg:#DDF0ED; --ok:#2A9D72; --warn:#9A6200; --warn-bg:#FCF1DA; --bad:#C94A3E; --scrim:rgba(10,30,32,.5);
+  --hdr:#102426; --hdr2:#1C3A3D; --hdr-ink:#E6F1F0; --hdr-mute:#9DB7B5; --hero-a:#1F6A6B; --hero-b:#12353A; --teal-on:#3E9E94;
+  --font-d:'Bricolage Grotesque',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --font-b:'Figtree',system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0B1819; --surface:#122527; --surface2:#183033; --line:#2A4447;
+  --ink:#E4F0EF; --muted:#9DB7B5; --accent:#2F8F84; --accent-fg:#6FD0C3; --on-accent:#FFFFFF;
+  --cold:#6FD0C3; --cold-bg:#16393B; --ok:#4FC79A; --warn:#F0B45A; --warn-bg:#3A2E14; --bad:#F08A7F; --scrim:rgba(0,0,0,.65); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0B1819; --surface:#122527; --surface2:#183033; --line:#2A4447;
+  --ink:#E4F0EF; --muted:#9DB7B5; --accent:#2F8F84; --accent-fg:#6FD0C3; --on-accent:#FFFFFF;
+  --cold:#6FD0C3; --cold-bg:#16393B; --ok:#4FC79A; --warn:#F0B45A; --warn-bg:#3A2E14; --bad:#F08A7F; --scrim:rgba(0,0,0,.65); color-scheme:dark}
+
+*{box-sizing:border-box}
+html.lock{overflow:hidden}
+body{background:var(--bg);color:var(--ink);font:17px/1.45 var(--font-b);padding-inline:16px;padding-block:0;-webkit-text-size-adjust:100%}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer;-webkit-tap-highlight-color:transparent}
+:focus-visible{outline:3px solid var(--cold);outline-offset:2px}
+.app{max-width:1100px;margin-inline:auto}
+h1,h2,h3{font-family:var(--font-d);margin:0;text-wrap:balance}
+
+.top{margin-inline:-16px;padding:22px 16px 18px;background:linear-gradient(135deg,var(--hero-a),var(--hero-b));color:var(--hdr-ink);border-radius:0 0 18px 18px}
+.top h1{font-size:clamp(26px,4vw,36px);font-weight:800;letter-spacing:-.01em;line-height:1.1;display:flex;align-items:center;gap:12px;color:#fff;max-width:1100px;margin-inline:auto}
+.top h1::before{content:"";width:12px;height:12px;border-radius:50%;background:var(--teal-on);box-shadow:0 0 0 4px rgba(62,158,148,.3);flex:none}
+.top p{margin:6px auto 0;color:var(--hdr-mute);max-width:1100px}
+
+.pills{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--hdr);margin-inline:-16px;padding:10px 16px;margin-top:12px;display:flex;gap:8px;overflow-x:auto;scrollbar-width:none}
+.pills::-webkit-scrollbar{display:none}
+.pill{flex:1 0 auto;min-height:52px;display:flex;align-items:center;gap:10px;padding:6px 16px;border-radius:999px;border:1.5px solid transparent;background:var(--hdr2);color:var(--hdr-ink);font-weight:600;white-space:nowrap}
+.pill .n{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:transparent;border:1.5px solid var(--hdr-mute);color:var(--hdr-ink);font-size:14px;font-variant-numeric:tabular-nums}
+.pill .cnt{font-size:13px;color:var(--hdr-mute);font-weight:500;font-variant-numeric:tabular-nums}
+.pill.full .n{background:var(--ok);border-color:var(--ok);color:#fff}
+.pill.on{background:var(--teal-on);color:#fff}
+.pill.on .n{background:#fff;border-color:#fff;color:var(--hero-b)}
+.pill.on .cnt{color:#fff}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:20px;margin-block:12px;display:flex;flex-direction:column;gap:18px}
+.card>h2{font-size:24px;font-weight:800}
+.card>.lead{margin:-10px 0 0;color:var(--muted)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px}
+.fld{display:flex;flex-direction:column;gap:8px;min-width:0}
+.fld>label,.fld>.lbl{font-weight:600}
+.fld .hint{font-size:14px;color:var(--muted);font-weight:400}
+.in{width:100%;min-height:56px;padding:10px 14px;border:1.5px solid var(--line);border-radius:12px;background:var(--surface2);font-size:18px}
+textarea.in{min-height:110px;resize:vertical}
+.in:focus{border-color:var(--cold);outline:none;box-shadow:0 0 0 3px var(--cold-bg)}
+.unit{display:flex;align-items:center;gap:10px}
+.unit span{color:var(--muted);white-space:nowrap}
+
+.chips{display:flex;flex-wrap:wrap;gap:10px}
+.chip{min-height:52px;padding:0 20px;border-radius:999px;border:1.5px solid var(--line);background:var(--surface2);font-weight:600}
+.chip.on{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.chips.big .chip{min-height:64px;padding:0 36px;font-size:20px}
+
+/* product rows */
+.thead{display:none}
+.rows{display:flex;flex-direction:column}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;padding-block:16px;border-top:1px solid var(--line)}
+.row:first-child{border-top:0;padding-top:0}
+.pname{grid-column:1/-1;display:flex;align-items:center;gap:12px;flex-wrap:wrap;min-width:0}
+.pname .nm{font-family:var(--font-d);font-weight:600;font-size:20px;flex:1 1 auto;min-width:0}
+.dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--line);flex:none}
+.row.done .dot{background:var(--ok);border-color:var(--ok)}
+.sm{min-height:44px;padding:0 16px;border-radius:999px;border:1.5px solid var(--line);background:transparent;font-weight:600;font-size:15px;color:var(--muted)}
+.sm[aria-pressed="true"]{background:var(--warn-bg);border-color:var(--warn);color:var(--warn)}
+.pick{display:flex;flex-direction:column;justify-content:center;gap:2px;min-height:60px;padding:8px 14px;text-align:left;border:1.5px solid var(--line);border-radius:12px;background:var(--surface2);min-width:0}
+.pick .cap,.note .cap{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.pick .val{font-size:19px;font-weight:600;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.pick .val.empty{color:var(--muted);font-weight:500;font-size:17px}
+.pick.has{border-color:var(--cold);background:var(--cold-bg)}
+.pick:disabled{opacity:.4;cursor:default}
+.note{grid-column:1/-1;display:flex;flex-direction:column;gap:2px}
+.note .in{min-height:60px;font-size:17px}
+.row.none .pick,.row.none .note{opacity:.45}
+@media (min-width:900px){
+  .thead{display:grid;grid-template-columns:minmax(230px,1.6fr) 1fr 1fr 1.25fr 1.8fr;gap:10px;font-size:13px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600;padding-bottom:8px}
+  .row{grid-template-columns:minmax(230px,1.6fr) 1fr 1fr 1.25fr 1.8fr;align-items:center}
+  .pname{grid-column:auto}
+  .pname .nm{flex-basis:calc(100% - 28px)}
+  .note{grid-column:auto}
+  .pick .cap,.note .cap{display:none}
+  .row .pick,.row .note .in{min-height:60px}
+}
+
+/* reference */
+details.ref{border:1.5px solid var(--cold);border-radius:14px;background:var(--cold-bg);padding:0}
+details.ref summary{min-height:56px;display:flex;align-items:center;padding:0 18px;font-weight:700;cursor:pointer;list-style:none}
+details.ref summary::-webkit-details-marker{display:none}
+details.ref summary::after{content:"+";margin-left:auto;font-size:26px;line-height:1}
+details.ref[open] summary::after{content:"\2212"}
+details.ref dl{margin:0;padding:0 18px 16px;display:grid;grid-template-columns:minmax(120px,170px) 1fr;gap:10px 18px}
+details.ref dt{font-weight:700}
+details.ref dd{margin:0}
+@media (max-width:640px){details.ref dl{grid-template-columns:1fr;gap:2px}details.ref dd{margin-bottom:10px}}
+
+/* bars + buttons */
+.bar{position:sticky;bottom:0;z-index:5;margin-inline:-16px;padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));background:var(--surface);border-top:1px solid var(--line);display:flex;align-items:center;gap:12px}
+.bar .mid{flex:1;text-align:center;color:var(--muted);font-size:15px}
+.btn{min-height:56px;padding:0 26px;border-radius:14px;border:1.5px solid var(--line);background:var(--surface);font-weight:700;font-size:18px;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;color:var(--ink)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn[disabled],.btn.off{opacity:.45;pointer-events:none}
+.foot{padding-block:18px 28px;color:var(--muted);font-size:14px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.foot button{background:none;border:0;color:var(--muted);text-decoration:underline;min-height:44px;padding:0 4px}
+
+/* review */
+.sum{display:flex;flex-direction:column;gap:6px;margin:0;padding:0;list-style:none}
+.sum li{display:grid;grid-template-columns:minmax(120px,200px) 1fr;gap:4px 16px;padding-block:8px;border-top:1px solid var(--line)}
+.sum li:first-child{border-top:0}
+.sum .k{color:var(--muted);font-weight:600}
+.sum .v{white-space:pre-wrap;overflow-wrap:anywhere}
+@media (max-width:640px){.sum li{grid-template-columns:1fr}}
+.alert{background:var(--warn-bg);border:1.5px solid var(--warn);color:var(--ink);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.alert b{color:var(--warn)}
+.alert .gl{display:flex;flex-wrap:wrap;gap:8px}
+.alert .gl button{min-height:44px;padding:0 16px;border-radius:999px;border:1.5px solid var(--warn);background:transparent;font-weight:600;color:var(--ink)}
+.actions{display:flex;flex-wrap:wrap;gap:12px}
+.okmsg{color:var(--ok);font-weight:600}
+.steps{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:8px}
+table.codes{border-collapse:collapse;width:100%;font-size:16px}
+table.codes th,table.codes td{text-align:left;padding:8px 10px;border-top:1px solid var(--line);vertical-align:top}
+table.codes code{font-family:ui-monospace,Menlo,Consolas,monospace;background:var(--surface2);border:1px solid var(--line);padding:2px 8px;border-radius:6px;font-weight:700}
+.tbl{overflow-x:auto}
+.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:14px;min-height:140px}
+.stat{padding:12px 14px;border-radius:12px;background:var(--surface2);border:1px solid var(--line)}
+
+/* picker sheet */
+#sheet .scrim{position:fixed;inset:0;background:var(--scrim);z-index:20}
+.sheet{position:fixed;z-index:21;left:50%;bottom:0;transform:translateX(-50%);width:min(560px,100%);max-height:86vh;max-height:86dvh;background:var(--surface);border:1px solid var(--line);border-radius:22px 22px 0 0;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom,0px)}
+.sh-head{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;padding:18px 20px 10px}
+.sh-head h2{font-size:22px;font-weight:800}
+.sh-head p{margin:2px 0 0;color:var(--muted)}
+.sh-head .x{min-height:48px;padding:0 18px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface2);font-weight:700}
+.typeit{padding:0 20px 12px;display:flex;flex-direction:column;gap:6px}
+.typeit label{font-weight:600;font-size:15px}
+.trow{display:flex;gap:10px}
+.trow .in{flex:1}
+.err{margin:0;color:var(--bad);font-weight:600}
+.opts{overflow-y:auto;overscroll-behavior:contain;padding:4px 20px 10px;display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--line);scroll-padding-block:80px;-webkit-overflow-scrolling:touch}
+.opt{min-height:58px;padding:0 18px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface2);text-align:left;font-size:21px;font-weight:600;font-variant-numeric:tabular-nums;flex:none}
+.opt[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.sh-foot{padding:10px 20px 14px;border-top:1px solid var(--line)}
+.sh-foot .btn{width:100%}
+.toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:12px 20px;border-radius:999px;font-weight:600;z-index:30;max-width:90vw}
+@media (prefers-reduced-motion:no-preference){.sheet{animation:up .18s ease-out}@keyframes up{from{transform:translate(-50%,24px);opacity:.6}}}
+</style>
+
+<div class="app" id="app"></div>
+<div id="sheet" hidden></div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+(function(){
+'use strict';
+
+/* ===== Form hookup. Leave formUrl empty until the form is connected (see the Form setup page). ===== */
+var BAKED={formUrl:"",map:{}};
+
+var TOKENS=['rep','date','customer','ctype','region','cheese','meat','culatello','cvolume','frequency','supplier','frustration','other'];
+var QLABEL={
+  rep:['Sales rep name','Short answer'],date:['Date of visit','Short answer'],customer:['Customer name','Short answer'],
+  ctype:['Customer type','Short answer'],region:['Region','Short answer'],
+  cheese:['Italian cheeses: what they buy','Paragraph'],meat:['Italian cured meats & salumi: what they buy','Paragraph'],
+  culatello:['Would you stock culatello if we supplied it cold chain?','Short answer'],
+  cvolume:['Expected culatello volume (kg per month)','Short answer'],
+  frequency:['How often do you order these products?','Short answer'],
+  supplier:['Main supplier(s) today','Short answer'],
+  frustration:['Biggest frustration with current supply','Short answer'],
+  other:['Anything else we should know?','Paragraph']
+};
+
+var GEN=['Young','Standard','Extra aged'];
+var GRANA=['9-16 months','16-20 months','20+ months (Riserva)'];
+var DOLCE=['Dolce (mild)','Piccante (sharp)'];
+var PROS=['12-16 months','18-24 months','24+ months'];
+var CHEESE=[
+ {id:'parm',name:'Parmigiano Reggiano',ages:['12 months','18 months','24 months','30 months','36+ months']},
+ {id:'grana',name:'Grana Padano',ages:GRANA},
+ {id:'hard',name:'Italian Hard',ages:GRANA},
+ {id:'peco',name:'Pecorino Romano',ages:['5-8 months (table)','8+ months (grating)']},
+ {id:'prov',name:'Provolone',ages:DOLCE},
+ {id:'gorg',name:'Gorgonzola',ages:DOLCE},
+ {id:'ochs',name:'Other cheese not listed',ages:GEN,other:'Which cheese? Brand, supplier, pack size'}
+];
+var MEAT=[
+ {id:'mec',name:'Prosciutto Crudo MEC',ages:PROS},
+ {id:'parma',name:'Prosciutto di Parma DOP',ages:PROS},
+ {id:'sand',name:'Prosciutto San Daniele DOP',ages:['13-16 months','18-24 months','24+ months']},
+ {id:'mpist',name:'Mortadella with Pistachio',ages:GEN},
+ {id:'mnopist',name:'Mortadella without Pistachio',ages:GEN},
+ {id:'smil',name:'Salame Milano',ages:GEN},
+ {id:'snap',name:'Salame Napoli',ages:GEN},
+ {id:'omeat',name:'Other meat not listed',ages:GEN,other:'Which meat? Brand, supplier, pack size'}
+];
+var LISTS={cheese:CHEESE,meat:MEAT};
+var PACK=[0.1,0.2,0.25,0.5,1,1.5,2,2.5,3,4,5,6,7,8,9,10,12,15,20,25,30,35,40];
+var VOL=[0.5,1,2,3,4,5,6,7,8,9,10,12,15,20,25,30,40,50,60,75,100,125,150,200,250,300,400,500,750,1000];
+var CTYPES=['Restaurant','Hotel / lodge','Deli / specialty store','Retail / supermarket','Caterer','Pizzeria','Wholesaler / distributor','Other'];
+var REGIONS=['WC','GTG','KZN','EC','Other'];
+var FREQ=['Daily','2-3 times a week','Weekly','Every 2 weeks','Monthly'];
+var FRUST=['Price','Quality / consistency','Availability','Delivery reliability','Cold chain / temperature','Minimum order size','Other'];
+var STEPS=['Customer','Cheeses','Meats','Culatello','Review'];
+var REF=[
+ ['What it is','A cured whole muscle taken from the best part of the pig’s hind leg. It is boned, salted and seasoned, tied up in a pig’s bladder casing with string, and hung to age. Soft, sweet and delicate – often called the “king” of Italian cured meats.'],
+ ['Where it comes from','Culatello di Zibello DOP, made only in a handful of villages on the foggy flatlands beside the River Po, in the province of Parma. Only meat from that area may carry the name; other “culatello” is not DOP.'],
+ ['Ageing','DOP culatello is aged for a minimum of about 10 months; most is sold at roughly 12 to 24 months. The finished piece weighs about 3 to 5 kg.'],
+ ['Versus Prosciutto di Parma','Prosciutto is the whole bone-in leg. Culatello is only the boneless centre muscle, so it is smaller, richer in flavour, and priced well above prosciutto.'],
+ ['How it is served','Sliced very thin at room temperature, on its own or with bread and butter. Pairs well with sparkling or lightly fizzy red wines such as Lambrusco.'],
+ ['Who buys it','A premium, low-volume product – typically fine-dining restaurants, hotels and top delis, bought whole or by the half. Once cut it must be kept chilled and sliced to order.']
+];
+
+/* ===== helpers ===== */
+function $(s,r){return (r||document).querySelector(s)}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+var ls={get:function(k){try{return localStorage.getItem(k)}catch(e){return null}},set:function(k,v){try{localStorage.setItem(k,v)}catch(e){}},del:function(k){try{localStorage.removeItem(k)}catch(e){}}};
+function today(){var d=new Date(),p=function(n){return String(n).padStart(2,'0')};return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())}
+function blankRow(){return {pack:'',vol:'',age:'',notes:'',none:false}}
+function findProd(sec,id){return LISTS[sec].filter(function(p){return p.id===id})[0]}
+
+/* ===== state ===== */
+function fresh(){
+  var rows={cheese:{},meat:{}};
+  CHEESE.forEach(function(p){rows.cheese[p.id]=blankRow()});
+  MEAT.forEach(function(p){rows.meat[p.id]=blankRow()});
+  return {step:0,c:{rep:ls.get('ccrs-rep')||'',date:today(),customer:'',ctype:'',region:''},rows:rows,q:{stock:'',cvol:'',freq:'',supplier:'',frust:'',other:''}};
+}
+var S=fresh();
+(function restore(){
+  var raw=ls.get('ccrs-draft-v1'); if(!raw)return;
+  try{
+    var d=JSON.parse(raw),f=fresh();
+    Object.keys(f.c).forEach(function(k){if(typeof d.c[k]==='string')f.c[k]=d.c[k]});
+    Object.keys(f.q).forEach(function(k){if(typeof d.q[k]==='string')f.q[k]=d.q[k]});
+    ['cheese','meat'].forEach(function(sec){Object.keys(f.rows[sec]).forEach(function(id){var r=d.rows&&d.rows[sec]&&d.rows[sec][id];if(r){var t=f.rows[sec][id];['pack','vol','age','notes'].forEach(function(k){if(typeof r[k]==='string')t[k]=r[k]});t.none=!!r.none}})});
+    f.step=Math.min(4,Math.max(0,d.step|0)); S=f;
+  }catch(e){}
+})();
+var UI={view:'survey',confirmReset:false,refOpen:false,setupUrl:'',setupParsed:null,setupMsg:''};
+if(location.hash==='#setup')UI.view='setup';
+
+var saveT=null;
+function flushDraft(){clearTimeout(saveT);ls.set('ccrs-draft-v1',JSON.stringify(S));if(S.c.rep.trim())ls.set('ccrs-rep',S.c.rep.trim())}
+function saveDraft(){clearTimeout(saveT);saveT=setTimeout(flushDraft,250)}
+window.addEventListener('pagehide',function(){if(saveT)flushDraft()});
+document.addEventListener('visibilitychange',function(){if(document.hidden&&saveT)flushDraft()});
+
+/* ===== answers ===== */
+function lineFor(p,r){
+  if(r.none)return p.name+': Does not buy';
+  var parts=[];
+  if(r.pack!=='')parts.push('Pack '+r.pack+' kg');
+  if(r.vol!=='')parts.push('Volume '+r.vol+' kg/week');
+  if(r.age)parts.push('Age '+r.age);
+  if(r.notes.trim())parts.push('Notes: '+r.notes.trim());
+  return parts.length?p.name+': '+parts.join(' | '):null;
+}
+function lines(sec){return LISTS[sec].map(function(p){return lineFor(p,S.rows[sec][p.id])}).filter(Boolean)}
+function answers(){
+  var c=S.c,q=S.q;
+  return {rep:c.rep.trim(),date:c.date,customer:c.customer.trim(),ctype:c.ctype,region:c.region,
+    cheese:lines('cheese').join('\n'),meat:lines('meat').join('\n'),
+    culatello:q.stock,cvolume:q.cvol,frequency:q.freq,supplier:q.supplier.trim(),frustration:q.frust,other:q.other.trim()};
+}
+function missing(){
+  var c=S.c,m=[];
+  if(!c.rep.trim())m.push('Sales rep name');
+  if(!c.date)m.push('Date of visit');
+  if(!c.customer.trim())m.push('Customer name');
+  if(!c.ctype)m.push('Customer type');
+  if(!c.region)m.push('Region');
+  return m;
+}
+function touched(sec){return LISTS[sec].filter(function(p){var r=S.rows[sec][p.id];return r.none||r.pack!==''||r.vol!==''||r.age||r.notes.trim()}).length}
+function qCount(){var q=S.q;return [q.stock,q.cvol,q.freq,q.supplier.trim(),q.frust,q.other.trim()].filter(Boolean).length}
+function plainText(){
+  var a=answers(),t=[];
+  t.push('COLD CHAIN REP SURVEY','Rep: '+a.rep,'Date: '+a.date,'Customer: '+a.customer,'Type: '+a.ctype,'Region: '+a.region,'');
+  t.push('ITALIAN CHEESES',a.cheese||'(none entered)','','CURED MEATS & SALUMI',a.meat||'(none entered)','');
+  t.push('CULATELLO & COLD CHAIN','Would stock culatello cold chain: '+a.culatello,'Expected volume (kg/month): '+a.cvolume,'Order frequency: '+a.frequency,'Main supplier(s): '+a.supplier,'Biggest frustration: '+a.frustration,'Anything else: '+a.other);
+  return t.join('\n');
+}
+
+/* ===== form connection ===== */
+function cfg(){
+  if(BAKED.formUrl)return BAKED;
+  var t=ls.get('ccrs-connect'); if(t){try{var o=JSON.parse(t);if(o&&o.formUrl)return o}catch(e){}}
+  return null;
+}
+function buildFormUrl(a,c){
+  if(!c||!c.formUrl)return '';
+  var u; try{u=new URL(c.formUrl)}catch(e){return ''}
+  var p=new URLSearchParams(u.search);
+  Object.keys(c.map||{}).forEach(function(k){if(a[k]!==undefined&&a[k]!=='')p.set(c.map[k],a[k])});
+  return u.origin+u.pathname+'?'+p.toString().replace(/\+/g,'%20');
+}
+function parseLink(s){
+  var u; try{u=new URL(String(s).trim())}catch(e){return {error:'That is not a full link. Paste the whole pre-filled link, starting with https://'}}
+  var keep=new URLSearchParams(),map={};
+  u.searchParams.forEach(function(v,k){if(TOKENS.indexOf(v)>-1)map[v]=k;else keep.append(k,v)});
+  if(!Object.keys(map).length)return {error:'No question codes found in that link. Type each code (rep, date, customer and so on) as the answer to its question, then copy the pre-filled link again.'};
+  return {formUrl:u.origin+u.pathname+'?'+keep.toString().replace(/\+/g,'%20'),map:map,missing:TOKENS.filter(function(t){return !map[t]})};
+}
+
+/* ===== toast + clipboard ===== */
+var toastT=null;
+function toast(msg){var t=$('#toast');t.textContent=msg;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(function(){t.hidden=true},2400)}
+function copyText(text,ta){
+  var done=function(){toast('Copied')},fail=function(){if(ta){ta.focus();ta.select()}toast('Press and hold to copy the selected text')};
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done,fail)}else fail();
+}
+
+/* ===== rendering ===== */
+function chips(path,opts,val,big){
+  return '<div class="chips'+(big?' big':'')+'" role="radiogroup">'+opts.map(function(o){
+    return '<button type="button" role="radio" aria-checked="'+(o===val)+'" class="chip'+(o===val?' on':'')+'" data-act="chip" data-path="'+path+'" data-val="'+esc(o)+'">'+esc(o)+'</button>'}).join('')+'</div>';
+}
+function pickBtn(kind,sec,id,label,text,disabled){
+  return '<button type="button" class="pick'+(text?' has':'')+'" data-act="pick" data-kind="'+kind+'" data-sec="'+sec+'" data-id="'+id+'"'+(disabled?' disabled':'')+'><span class="cap">'+label+'</span><span class="val'+(text?'':' empty')+'">'+(text?esc(text):'Tap to choose')+'</span></button>';
+}
+function rowHTML(sec,p){
+  var r=S.rows[sec][p.id],done=r.none||r.pack!==''||r.vol!==''||r.age||r.notes.trim();
+  return '<div class="row'+(done?' done':'')+(r.none?' none':'')+'" data-row="'+sec+':'+p.id+'">'+
+    '<div class="pname"><span class="dot"></span><span class="nm">'+esc(p.name)+'</span><button type="button" class="sm" data-act="none" data-sec="'+sec+'" data-id="'+p.id+'" aria-pressed="'+r.none+'">Doesn’t buy</button></div>'+
+    pickBtn('pack',sec,p.id,'Pack size',r.pack!==''?r.pack+' kg':'',r.none)+
+    pickBtn('vol',sec,p.id,'Volume (kg per week)',r.vol!==''?r.vol+' kg/wk':'',r.none)+
+    pickBtn('age',sec,p.id,'Maturity / age',r.age,r.none)+
+    '<label class="note"><span class="cap">Notes</span><input class="in" type="text" enterkeyhint="done" autocomplete="off" data-note="'+sec+':'+p.id+'" value="'+esc(r.notes)+'" placeholder="'+esc(p.other||'Brand, supplier, pack size')+'"></label>'+
+  '</div>';
+}
+function stepCustomer(){
+  var c=S.c;
+  return '<section class="card"><h2>1. Customer details</h2>'+
+   '<div class="grid2">'+
+    '<div class="fld"><label for="f-rep">Sales rep name</label><input id="f-rep" class="in" type="text" autocomplete="name" autocapitalize="words" data-bind="c.rep" value="'+esc(c.rep)+'"></div>'+
+    '<div class="fld"><label for="f-date">Date of visit</label><input id="f-date" class="in" type="date" data-bind="c.date" value="'+esc(c.date)+'"></div>'+
+   '</div>'+
+   '<div class="fld"><label for="f-cust">Customer name</label><input id="f-cust" class="in" type="text" autocapitalize="words" data-bind="c.customer" value="'+esc(c.customer)+'"></div>'+
+   '<div class="fld"><span class="lbl">Customer type</span>'+chips('c.ctype',CTYPES,c.ctype)+'</div>'+
+   '<div class="fld"><span class="lbl">Region</span>'+chips('c.region',REGIONS,c.region)+'</div>'+
+  '</section>';
+}
+function stepProducts(sec){
+  var title=sec==='cheese'?'2. Italian cheeses: what do they buy?':'3. Italian cured meats & salumi: what do they buy?';
+  return '<section class="card"><h2>'+title+'</h2><p class="lead">Tap a box to pick a number or option. Use “Doesn’t buy” for products they don’t stock. Only the notes need typing.</p>'+
+   '<div><div class="thead"><span>Product</span><span>Pack size</span><span>Volume (kg per week)</span><span>Preferred maturity / age</span><span>Notes (brand, supplier, pack size)</span></div>'+
+   '<div class="rows">'+LISTS[sec].map(function(p){return rowHTML(sec,p)}).join('')+'</div></div></section>';
+}
+function stepCulatello(){
+  var q=S.q;
+  return '<section class="card"><h2>4. Culatello & cold chain</h2><p class="lead">A few quick questions.</p>'+
+   '<details class="ref"'+(UI.refOpen?' open':'')+'><summary>Culatello at a glance</summary><dl>'+REF.map(function(r){return '<dt>'+esc(r[0])+'</dt><dd>'+esc(r[1])+'</dd>'}).join('')+'</dl></details>'+
+   '<div class="fld"><span class="lbl">Would you stock culatello if we supplied it cold chain?</span>'+chips('q.stock',['Yes','Maybe','No'],q.stock,true)+'</div>'+
+   '<div class="fld"><label for="f-cvol">Expected culatello volume (kg per month)</label><div class="unit"><input id="f-cvol" class="in" style="max-width:240px" type="text" inputmode="decimal" autocomplete="off" data-bind="q.cvol" value="'+esc(q.cvol)+'"><span>kg per month</span></div></div>'+
+   '<div class="fld"><span class="lbl">How often do you order these products?</span>'+chips('q.freq',FREQ,q.freq)+'</div>'+
+   '<div class="fld"><label for="f-sup">Who is your main supplier(s) today?</label><input id="f-sup" class="in" type="text" data-bind="q.supplier" value="'+esc(q.supplier)+'"></div>'+
+   '<div class="fld"><span class="lbl">Biggest frustration with current supply?</span>'+chips('q.frust',FRUST,q.frust)+'</div>'+
+   '<div class="fld"><label for="f-oth">Anything else we should know?</label><textarea id="f-oth" class="in" data-bind="q.other">'+esc(q.other)+'</textarea></div>'+
+  '</section>';
+}
+function stepReview(){
+  var a=answers(),m=missing(),c=cfg(),url=buildFormUrl(a,c);
+  var nodata=(touched('cheese')+touched('meat')===0);
+  var li=function(k,v){return '<li><span class="k">'+esc(k)+'</span><span class="v">'+(v?esc(v):'<span style="color:var(--muted)">–</span>')+'</span></li>'};
+  var html='<section class="card"><h2>Review and send</h2>';
+  if(m.length){
+    html+='<div class="alert"><b>Still needed before you send:</b><div class="gl"><button type="button" data-act="step" data-i="0">'+m.map(esc).join(', ')+' → go to Customer</button></div></div>';
+  }
+  if(nodata)html+='<div class="alert"><b>No cheese or meat answers entered yet.</b> You can still send, but check this is right.</div>';
+  html+='<ul class="sum">'+li('Rep',a.rep)+li('Date',a.date)+li('Customer',a.customer)+li('Type',a.ctype)+li('Region',a.region)+li('Cheeses',a.cheese)+li('Meats & salumi',a.meat)+
+    li('Would stock culatello',a.culatello)+li('Culatello kg / month',a.cvolume)+li('Order frequency',a.frequency)+li('Main supplier(s)',a.supplier)+li('Biggest frustration',a.frustration)+li('Anything else',a.other)+'</ul>';
+  html+='<div class="actions">';
+  if(url){
+    html+='<a class="btn pri'+(m.length?' off':'')+'" href="'+esc(url)+'" target="_blank" rel="noopener">Open form to send</a>';
+  }else{
+    html+='<span class="btn pri off">Form not connected yet</span>';
+  }
+  html+='<button type="button" class="btn" data-act="copy">Copy answers</button>';
+  html+='<button type="button" class="btn" data-act="reset">'+(UI.confirmReset?'Tap again to clear this survey':'Start next customer')+'</button></div>';
+  html+='<p class="lead" style="margin:0">'+(url?'The form opens with every answer filled in. Tap Submit on the form page, then come back here and start the next customer.':'Until the form is connected, use Copy answers and send them on.')+'</p>';
+  html+='</section>';
+  return html;
+}
+function pillCount(i){
+  var m=missing();
+  if(i===0)return {t:(5-m.length)+'/5',full:m.length===0};
+  if(i===1)return {t:touched('cheese')+'/'+CHEESE.length,full:touched('cheese')===CHEESE.length};
+  if(i===2)return {t:touched('meat')+'/'+MEAT.length,full:touched('meat')===MEAT.length};
+  if(i===3)return {t:qCount()+'/6',full:qCount()===6};
+  return {t:'',full:false};
+}
+function surveyHTML(){
+  var pills=STEPS.map(function(n,i){var pc=pillCount(i);
+    return '<button type="button" class="pill'+(i===S.step?' on':'')+(pc.full?' full':'')+'" data-act="step" data-i="'+i+'"'+(i===S.step?' aria-current="step"':'')+'><span class="n">'+(i+1)+'</span><span>'+n+'</span><span class="cnt">'+pc.t+'</span></button>'}).join('');
+  var body=[stepCustomer,function(){return stepProducts('cheese')},function(){return stepProducts('meat')},stepCulatello,stepReview][S.step]();
+  var bar='<div class="bar"><button type="button" class="btn" data-act="back"'+(S.step===0?' disabled':'')+'>Back</button><span class="mid">Step '+(S.step+1)+' of 5</span>'+
+    (S.step<4?'<button type="button" class="btn pri" data-act="next">Next: '+STEPS[S.step+1]+'</button>':'<span style="min-width:96px"></span>')+'</div>';
+  return '<header class="top"><h1>Cold Chain Rep Survey</h1><p>Italian cheeses & cured meats · customer visit</p></header>'+
+    '<nav class="pills" aria-label="Survey steps">'+pills+'</nav><main>'+body+'</main>'+bar+
+    '<footer class="foot"><span>Answers are kept on this tablet until you start the next customer.</span><button type="button" data-act="setup">Form setup</button></footer>';
+}
+function setupHTML(){
+  var c=cfg(),p=UI.setupParsed;
+  var status=BAKED.formUrl?'Connected to the form built into this page.':(c?'Test connection saved on this device only.':'Not connected.');
+  var h='<header class="top"><h1>Form setup</h1><p>Connect the survey to a Google Form or Microsoft Form.</p></header>';
+  h+='<section class="card"><h2>1. Build the form</h2><p class="lead">Create a form with these 13 questions. Make every one a Short answer or Paragraph question (no dropdowns, no date picker), so the survey can fill them in.</p>'+
+    '<div class="tbl"><table class="codes"><thead><tr><th>Code</th><th>Question</th><th>Type</th></tr></thead><tbody>'+
+    TOKENS.map(function(t){return '<tr><td><code>'+t+'</code></td><td>'+esc(QLABEL[t][0])+'</td><td>'+QLABEL[t][1]+'</td></tr>'}).join('')+'</tbody></table></div></section>';
+  h+='<section class="card"><h2>2. Get the pre-filled link</h2><ol class="steps">'+
+    '<li><b>Google Forms:</b> three-dot menu, Get pre-filled link. Type each code from the table as the answer to its question, tap Get link, then Copy link.</li>'+
+    '<li><b>Microsoft Forms:</b> three-dot menu, Get pre-filled URL. Type each code as the answer, then copy the URL.</li>'+
+    '<li>Paste the full link below.</li></ol>'+
+    '<div class="fld"><label for="s-url">Pre-filled link</label><textarea id="s-url" class="in mono" data-setup="url" placeholder="https://docs.google.com/forms/d/e/.../viewform?usp=pp_url&entry.123=rep&entry.456=date ...">'+esc(UI.setupUrl)+'</textarea></div>'+
+    '<div class="actions"><button type="button" class="btn pri" data-act="parse">Read link</button></div>';
+  if(UI.setupMsg)h+='<p class="stat">'+esc(UI.setupMsg)+'</p>';
+  if(p&&!p.error){
+    var sample={rep:'TEST rep',date:today(),customer:'TEST customer (delete)',ctype:'Restaurant',region:'WC',cheese:'Parmigiano Reggiano: Pack 5 kg | Volume 20 kg/week | Age 24 months | Notes: test',meat:'Prosciutto di Parma DOP: Pack 7 kg | Volume 10 kg/week | Age 18-24 months',culatello:'Yes',cvolume:'5',frequency:'Weekly',supplier:'Test supplier',frustration:'Price',other:'Test response, please delete'};
+    var tu=buildFormUrl(sample,p),json=JSON.stringify({formUrl:p.formUrl,map:p.map},null,1);
+    h+='<p class="stat"><b>'+Object.keys(p.map).length+' of 13</b> questions found.'+(p.missing.length?' Missing: '+p.missing.join(', ')+'.':' All matched.')+'</p>'+
+      '<div class="actions"><a class="btn" href="'+esc(tu)+'" target="_blank" rel="noopener">Open form with test answers</a>'+
+      '<button type="button" class="btn" data-act="saveTest">Use on this device</button></div>'+
+      '<div class="fld"><label for="s-json">Settings to send back to Claude</label><textarea id="s-json" class="in mono" readonly>'+esc(json)+'</textarea><div class="actions"><button type="button" class="btn" data-act="copycfg">Copy settings</button></div></div>';
+  }else if(p&&p.error){h+='<p class="alert"><b>'+esc(p.error)+'</b></p>'}
+  h+='</section><section class="card"><h2>Status</h2><p class="stat">'+esc(status)+'</p>'+(!BAKED.formUrl&&c?'<div class="actions"><button type="button" class="btn" data-act="clearTest">Remove test connection</button></div>':'')+'</section>';
+  h+='<div class="bar"><button type="button" class="btn pri" data-act="closeSetup">Back to survey</button></div>';
+  return h;
+}
+function render(){
+  var y=window.scrollY;
+  $('#app').innerHTML=UI.view==='setup'?setupHTML():surveyHTML();
+  window.scrollTo(0,y);
+}
+function commit(){saveDraft();render()}
+function setStep(i){S.step=i;UI.confirmReset=false;saveDraft();render();window.scrollTo(0,0)}
+
+/* ===== bindings ===== */
+function setPath(path,v){var p=path.split('.');S[p[0]][p[1]]=v}
+function getPath(path){var p=path.split('.');return S[p[0]][p[1]]}
+document.addEventListener('input',function(e){
+  var t=e.target;
+  if(t.dataset.bind){setPath(t.dataset.bind,t.value);saveDraft();refreshMeta()}
+  else if(t.dataset.note){var k=t.dataset.note.split(':');S.rows[k[0]][k[1]].notes=t.value;saveDraft();refreshMeta()}
+  else if(t.dataset.setup==='url'){UI.setupUrl=t.value}
+});
+function refreshMeta(){
+  document.querySelectorAll('.pill').forEach(function(el,i){var pc=pillCount(i);el.classList.toggle('full',pc.full);var c=el.querySelector('.cnt');if(c)c.textContent=pc.t});
+  document.querySelectorAll('.row').forEach(function(el){var k=el.dataset.row.split(':'),r=S.rows[k[0]][k[1]];el.classList.toggle('done',!!(r.none||r.pack!==''||r.vol!==''||r.age||r.notes.trim()))});
+}
+document.addEventListener('toggle',function(e){if(e.target.classList&&e.target.classList.contains('ref'))UI.refOpen=e.target.open},true);
+
+document.addEventListener('click',function(e){
+  var b=e.target.closest('[data-act]'); if(!b)return;
+  var a=b.dataset.act;
+  if(a==='step')return setStep(+b.dataset.i);
+  if(a==='next')return setStep(Math.min(4,S.step+1));
+  if(a==='back')return setStep(Math.max(0,S.step-1));
+  if(a==='chip'){var cur=getPath(b.dataset.path);setPath(b.dataset.path,cur===b.dataset.val?'':b.dataset.val);return commit()}
+  if(a==='none'){var r=S.rows[b.dataset.sec][b.dataset.id];r.none=!r.none;if(r.none){r.pack='';r.vol='';r.age=''}return commit()}
+  if(a==='pick')return openPick(b.dataset.kind,b.dataset.sec,b.dataset.id);
+  if(a==='copy')return copyText(plainText());
+  if(a==='reset'){
+    if(!UI.confirmReset){UI.confirmReset=true;render();setTimeout(function(){if(UI.confirmReset){UI.confirmReset=false;render()}},4000);return}
+    S=fresh();UI.confirmReset=false;ls.del('ccrs-draft-v1');render();window.scrollTo(0,0);return toast('Ready for the next customer');
+  }
+  if(a==='setup'){UI.view='setup';try{location.hash='setup'}catch(x){}render();return window.scrollTo(0,0)}
+  if(a==='closeSetup'){UI.view='survey';try{history.replaceState(null,'',location.pathname+location.search)}catch(x){}render();return window.scrollTo(0,0)}
+  if(a==='parse'){var ta=$('#s-url');if(ta)UI.setupUrl=ta.value;UI.setupParsed=parseLink(UI.setupUrl);UI.setupMsg='';return render()}
+  if(a==='saveTest'&&UI.setupParsed&&!UI.setupParsed.error){ls.set('ccrs-connect',JSON.stringify({formUrl:UI.setupParsed.formUrl,map:UI.setupParsed.map}));UI.setupMsg='Saved. The Review step on this tablet now opens your form.';return render()}
+  if(a==='clearTest'){ls.del('ccrs-connect');UI.setupMsg='Test connection removed.';return render()}
+  if(a==='copycfg'){var j=$('#s-json');return copyText(j?j.value:'',j)}
+});
+
+/* ===== picker sheet ===== */
+var root=$('#sheet'),cur=null;
+function openPick(kind,sec,id){
+  var r=S.rows[sec][id],p=findProd(sec,id),cfgp;
+  if(kind==='age')cfgp={title:p.name,sub:'Preferred maturity / age',options:p.ages.map(function(x){return {v:x,label:x}}),value:r.age,set:function(v){r.age=v}};
+  else if(kind==='pack')cfgp={title:p.name,sub:'Pack size (kg)',options:PACK.map(function(n){return {v:String(n),label:n+' kg'}}),value:r.pack,type:true,unit:'kg',set:function(v){r.pack=v}};
+  else cfgp={title:p.name,sub:'Volume (kg per week)',options:VOL.map(function(n){return {v:String(n),label:n+' kg per week'}}),value:r.vol,type:true,unit:'kg per week',set:function(v){r.vol=v}};
+  cur=cfgp;
+  var sel=String(cfgp.value||'');
+  root.innerHTML='<div class="scrim" data-sheet="close"></div><div class="sheet" role="dialog" aria-modal="true" aria-label="'+esc(cfgp.title+', '+cfgp.sub)+'">'+
+   '<div class="sh-head"><div><h2>'+esc(cfgp.title)+'</h2><p>'+esc(cfgp.sub)+'</p></div><button type="button" class="x" data-sheet="close">Close</button></div>'+
+   (cfgp.type?'<div class="typeit"><label for="sheet-num">Or type it in ('+esc(cfgp.unit)+')</label><div class="trow"><input id="sheet-num" class="in" type="text" inputmode="decimal" autocomplete="off" placeholder="e.g. 17.5"><button type="button" class="btn pri" data-sheet="use">Use</button></div><p class="err" id="sheet-err" hidden>Enter a number above 0.</p></div>':'')+
+   '<div class="opts" role="listbox" aria-label="'+esc(cfgp.sub)+'">'+cfgp.options.map(function(o){return '<button type="button" role="option" class="opt" aria-selected="'+(String(o.v)===sel)+'" data-sheet="opt" data-v="'+esc(o.v)+'">'+esc(o.label)+'</button>'}).join('')+'</div>'+
+   '<div class="sh-foot"><button type="button" class="btn" data-sheet="clear">Clear this answer</button></div></div>';
+  root.hidden=false;document.documentElement.classList.add('lock');
+  var o=$('.opts',root),s=$('[aria-selected="true"]',root);
+  if(s)o.scrollTop=s.offsetTop-o.offsetTop-(o.clientHeight-s.offsetHeight)/2;
+}
+function closeSheet(){root.hidden=true;root.innerHTML='';cur=null;document.documentElement.classList.remove('lock')}
+function applyPick(v){if(cur){cur.set(v)}closeSheet();commit()}
+function useTyped(){
+  var inp=$('#sheet-num',root); if(!inp)return;
+  var v=inp.value.trim().replace(',','.'),n=Number(v);
+  if(v===''||!isFinite(n)||n<=0||n>100000){$('#sheet-err',root).hidden=false;return}
+  applyPick(String(n));
+}
+root.addEventListener('click',function(e){
+  var b=e.target.closest('[data-sheet]'); if(!b)return;
+  var a=b.dataset.sheet;
+  if(a==='close')return closeSheet();
+  if(a==='opt')return applyPick(b.dataset.v);
+  if(a==='clear')return applyPick('');
+  if(a==='use')return useTyped();
+});
+root.addEventListener('keydown',function(e){if(e.key==='Enter'&&e.target.id==='sheet-num'){e.preventDefault();useTyped()}});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!root.hidden)closeSheet()});
+window.addEventListener('hashchange',function(){if(location.hash==='#setup'&&UI.view!=='setup'){UI.view='setup';render()}});
+
+render();
+})();
+</script>
+
+</body></html>
