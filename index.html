@@ -548,8 +548,8 @@ document.addEventListener('click',function(e){
       var sent=!outbox().some(function(x){return x.id===item.id});
       UI.sending=false;
       S=fresh();ls.del('ccrs-draft-v1');UI.confirmReset=false;
-      UI.banner=sent?{text:'Sent to the sheet: '+item.customer+'. Ready for the next customer.'}:{warn:true,text:'Saved on this tablet: '+item.customer+'. '+(UI.sendErr||'It will send automatically.')};
-      render();window.scrollTo(0,0);toast(sent?'Sent':'Saved, will send later');
+      UI.banner=sent?{text:'Response has been sent'}:{warn:true,text:'Saved on this tablet: '+item.customer+'. '+(UI.sendErr||'It will send automatically.')};
+      render();window.scrollTo(0,0);toast(sent?'Response has been sent':'Saved, will send later');
     });
   }
   if(a==='flush'){return flushOutbox().then(function(ok){toast(ok?'All sent':'Still waiting for signal')})}
