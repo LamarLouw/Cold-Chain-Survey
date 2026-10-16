@@ -336,15 +336,19 @@ function postOne(url,item){
   var body=JSON.stringify(item);
   return fetch(url,{method:'POST',body:body}).then(function(r){
     return r.text().then(function(txt){
-      var j;try{j=JSON.parse(txt)}catch(e){throw new Error('The sheet link did not reply properly. Check the Apps Script is deployed as a Web app with access set to Anyone.')}
+      var j;try{j=JSON.parse(txt)}catch(e){j=null}
+      // Google sometimes returns a page instead of the JSON reply even though the row was saved.
+      // Send once more without reading the reply. The sheet ignores repeats of the same survey ID, so no duplicates.
+      if(!j)return blind();
       if(!j.ok)throw new Error('The sheet replied: '+(j.error||'not accepted'));
       return j;
     });
-  },function(){
+  },function(){return blind()});
+  function blind(){
     // Network or browser blocked reading the reply: send once more without reading it.
     // The sheet ignores repeats of the same survey, so this is safe.
     return fetch(url,{method:'POST',mode:'no-cors',body:body}).then(function(){return {ok:true,blind:true}});
-  });
+  }
 }
 var flushing=null;
 function flushOutbox(){
